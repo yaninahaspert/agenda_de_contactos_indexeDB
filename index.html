@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+            crossorigin="anonymous"></script>
+    <link rel=stylesheet type="text/css" href="estilos.css">
+</head>
+<body>
+
+<div class="container mt-5 p-5">
+    <div id="contenido" class="row">
+        <div class="col-md-6 agregar-cita">
+            <form id="nuevoContacto">
+                <legend class="mb-4">Datos Personales</legend>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-lg-4 col-form-label">Nombre</label>
+                    <div class="col-sm-8 col-lg-8">
+                        <input type="text" id="nombre" name="nombre" class="form-control"
+                               placeholder="Nombre">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-lg-4 col-form-label">E-mail</label>
+                    <div class="col-sm-8 col-lg-8">
+                        <input type="text" id="email" name="email" class="form-control"
+                               placeholder="E-mail">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-lg-4 col-form-label">Teléfono:</label>
+                    <div class="col-sm-8 col-lg-8">
+                        <input type="tel" id="telefono" name="telefono" class="form-control"
+                               placeholder="Número de Teléfono">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-lg-4 col-form-label">Direccion</label>
+                    <div class="col-sm-8 col-lg-8">
+                        <input type="text" id="direccion" name="direccion" class="form-control" placeholder="Direccion">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-4 col-lg-4 col-form-label">Telefono fijo</label>
+                    <div class="col-sm-8 col-lg-8">
+                        <input type="tel" id="telefonoFijo" name="telefonoFijo" class="form-control"
+                               placeholder="Número de Teléfono Fijo">
+                    </div>
+                </div>
+                <div>
+                    <input id="contactoId" name="contactoId" style="display: none">
+                </div>
+
+                <br>
+
+                <div class="form-group">
+                    <button id="botonGuardarContacto" type="submit" class="btn btn-success w-100 d-block">Guardar
+                        contacto
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <h2 id="administra" class="mb-4">Agenda Telefónica</h2>
+            <ul id="contactos" class="list-group lista-contacto"></ul>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>NOMBRE Y APELLIDO</th>
+                    <th>TELEFONO</th>
+                </tr>
+                </thead>
+                <tbody id="listaDeContactos">
+
+                </tbody>
+            </table>
+        </div>
+    </div> <!--.row-->
+</div><!--.container-->
+
+<script>
+    let editando;
+
+    class RepositorioContactos {
+        constructor() {
+            this.contactos = [];
+        }
+
+
+        agregarContactos(contacto) {
+            this.contactos.push(contacto)
+
+        }
+
+        eliminarContacto(id) {
+            this.contactos = this.contactos.filter(contacto => contacto.id !== id)
+
+        }
+
+        actualizarContacto(contactoActualizada) {
+            this.contactos = this.contactos.map(contacto => {
+                return contacto.id === contactoActualizada.id ? contactoActualizada : contacto
+            })
+        }
+    }
+
+    class UI {
+        imprimirAlerta(mensaje, tipo) {
+            const divMensaje = document.createElement("div");
+            divMensaje.classList.add("text-center", "alert", "d-block", "col-");
+            if (tipo === "error") {
+                divMensaje.classList.add("alert-danger");
+            } else {
+                divMensaje.classList.add("alert-success");
+            }
+            divMensaje.textContent = mensaje;
+            document.querySelector("#contenido").insertBefore(divMensaje, document.querySelector(".agregar-cita"))
+
+            setTimeout(() => {
+                divMensaje.remove()
+            }, 3000)
+        }
+
+        imprimirContactos(contenedorDeContactos) {
+            this.limpiarListaDeContactos();
+
+            const listaDeContactosTag = document.querySelector('#listaDeContactos');
+
+
+            contenedorDeContactos.contactos.forEach((contacto) => {
+                let trTabla = document.createElement("tr");
+                let tdTablaNombre = document.createElement("td");
+                let tdTablaTelefono = document.createElement("td")
+                trTabla.appendChild(tdTablaNombre);
+                trTabla.appendChild(tdTablaTelefono);
+                let TablaNombre = document.createTextNode(contacto.nombre);
+                let TablaTelefono = document.createTextNode(contacto.telefono);
+                tdTablaNombre.appendChild(TablaNombre);
+                tdTablaTelefono.appendChild(TablaTelefono);
+                let botonEliminar = document.createElement("button");
+                botonEliminar.classList.add("btn");
+                botonEliminar.innerHTML = ` Eliminar <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clip-rule="evenodd"></path></svg> `;
+                trTabla.appendChild(botonEliminar);
+                botonEliminar.onclick = () => {
+                    eliminarContacto(contacto.id);
+                }
+
+                let botonEditar = document.createElement("button");
+                botonEditar.classList.add("btn")
+                listaDeContactosTag.appendChild(trTabla);
+                botonEditar.innerHTML = `Editar`;
+                trTabla.appendChild(botonEditar);
+                botonEditar.onclick = () => {
+                    editarContacto(contacto);
+                }
+            })
+            //local storage
+
+        }
+
+        limpiarListaDeContactos() {
+            document.querySelector('#listaDeContactos').innerHTML = '';
+        }
+    } //fin class UI
+
+    //para craer e objeto la llave tiene que coincidir con el nombre del "name" en el html
+    //crearmos el objet principal
+    //por mas que sea const se pueden modificar sus valores, salvo que este bloqueado
+    const contactoObj = {
+        nombre: '',
+        email: '',
+        telefono: '',
+        direccion: '',
+        telefonoFijo: '',
+    }
+
+    const iu = new UI();
+    const contenedorDeContactos = new RepositorioContactos();
+
+    iu.imprimirContactos(contenedorDeContactos);
+
+    document.querySelector('#botonGuardarContacto').addEventListener('click', (e) => {
+        e.preventDefault();
+
+        contactoObj.nombre = document.querySelector('#nombre').value;
+        contactoObj.email = document.querySelector('#email').value;
+        contactoObj.telefono = document.querySelector('#telefono').value;
+        contactoObj.direccion = document.querySelector('#direccion').value;
+        contactoObj.telefonoFijo = document.querySelector('#telefonoFijo').value;
+
+        if (datosIngresadosSonValidos()) {
+            agregarContacto();
+        } else {
+            iu.imprimirAlerta('Todos los mensajes son Obligatorios', 'error')
+        }
+    })
+
+
+    function datosIngresadosSonValidos() {
+        const {nombre, email, telefono, direccion, telefonoFijo} = contactoObj;
+
+        if (nombre === '' || email === '' || telefono === '' || direccion === '' || telefonoFijo === '') {
+            return false
+        } else {
+            return true
+        }
+    }
+
+    function agregarContacto() {
+        if (editando) {
+            contactoObj.id = parseInt(document.querySelector('#contactoId').value)
+            contenedorDeContactos.actualizarContacto({...contactoObj})
+            iu.imprimirAlerta("Editado correctamente")
+            document.getElementById("botonGuardarContacto").innerHTML = "Guardar Contacto"
+            editando = false;
+        } else {
+            contactoObj.id = Date.now()
+            //arreglo que contiene todos los contactos
+            contenedorDeContactos.agregarContactos({...contactoObj})
+            iu.imprimirAlerta("Agregado correctamente")
+        }
+        reiniciarObject()
+        document.querySelector('#nuevoContacto').reset()
+        iu.imprimirContactos(contenedorDeContactos)
+    }
+
+    function reiniciarObject() {
+        contactoObj.nombre = "";
+        contactoObj.email = "";
+        contactoObj.telefono = "";
+        contactoObj.direccion = "";
+        contactoObj.telefonoFijo = "";
+    }
+
+    function eliminarContacto(id) {
+        contenedorDeContactos.eliminarContacto(id);//elimina el contacto
+        iu.imprimirAlerta("El contacto ha sido eliminado con éxito");//imprime mensaje
+        iu.imprimirContactos(contenedorDeContactos);//limpia el html
+
+    }
+
+    function editarContacto(contacto) {
+        document.querySelector('#nombre').value = contacto.nombre;
+        document.querySelector('#email').value = contacto.email;
+        document.querySelector('#telefono').value = contacto.telefono;
+        document.querySelector('#direccion').value = contacto.direccion;
+        document.querySelector('#telefonoFijo').value = contacto.telefonoFijo;
+        document.querySelector('#contactoId').value = contacto.id;
+
+        document.getElementById("botonGuardarContacto").innerHTML = "Editar Contacto"
+
+        editando = true;
+    }
+
+
+</script>
+
+</body>
+</html>

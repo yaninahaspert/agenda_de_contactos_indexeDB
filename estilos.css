@@ -1,0 +1,14 @@
+.cajaCeleste{
+    border-radius: 3px;
+    background-color: skyblue;
+    width: 1000px;
+    height: 200px;
+
+}
+.contenedor{
+    justify-content: center;
+}
+svg {
+    width: 21px;
+
+}
