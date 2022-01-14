@@ -85,20 +85,70 @@
 <script>
     let editando;
 
+    document.addEventListener('DOMContentLoaded', () => {
+        crearDB();
+    });
+
+    let crearBD = null;
+
+    //crea la base de datos
+    function crearDB() {
+        crearBD = window.indexedDB.open('agendatelefonicaDB', 1);
+
+        crearBD.onsuccess = function (e) {
+            alert('Database loaded');
+            loadAll();
+            iu.imprimirContactos(contenedorDeContactos)
+        };
+
+        crearBD.onerror = function (e) {
+            alert('Error loading database');
+        };
+
+        crearBD.onupgradeneeded = function (e) {
+            let DB = crearBD.result;
+            let objectStore = DB.createObjectStore('people', {keyPath: 'id', autoIncrement: true});
+            objectStore.createIndex('nombre', 'nombre', {unique: false});
+            objectStore.createIndex('email', 'email', {unique: false});
+            objectStore.createIndex('telefono', 'telefono', {unique: false});
+            objectStore.createIndex('direccion', 'direccion', {unique: false});
+            objectStore.createIndex('telefonoFijo', 'telefonoFijo', {unique: false});
+            objectStore.createIndex('id', 'id', {unique: true});
+        };
+    }
+
     class RepositorioContactos {
         constructor() {
             this.contactos = [];
         }
 
-
-        agregarContactos(contacto) {
+        agregarContacto(contacto) {
             this.contactos.push(contacto)
 
+            let DB = crearBD.result;
+            let transaction = DB.transaction(["people"], "readwrite");
+            let object = transaction.objectStore("people");
+
+            let request = object.put({
+                nombre: contacto.nombre,
+                email: contacto.email,
+                telefono: contacto.telefono,
+                direccion: contacto.direccion,
+                telefonoFijo: contacto.telefonoFijo,
+                id: contacto.id,
+            });
+
+            request.onerror = function (e) {
+                alert(request.error.name + '\n\n' + request.error.message);
+            };
+
+            transaction.oncomplete = function (e) {
+                alert('Guardado en la DB correctamente');
+            };
         }
 
         eliminarContacto(id) {
             this.contactos = this.contactos.filter(contacto => contacto.id !== id)
-
         }
 
         actualizarContacto(contactoActualizada) {
@@ -107,6 +157,7 @@
             })
         }
     }
+
 
     class UI {
         imprimirAlerta(mensaje, tipo) {
@@ -161,18 +212,14 @@
                     editarContacto(contacto);
                 }
             })
-            //local storage
 
         }
 
         limpiarListaDeContactos() {
             document.querySelector('#listaDeContactos').innerHTML = '';
         }
-    } //fin class UI
+    }
 
-    //para craer e objeto la llave tiene que coincidir con el nombre del "name" en el html
-    //crearmos el objet principal
-    //por mas que sea const se pueden modificar sus valores, salvo que este bloqueado
     const contactoObj = {
         nombre: '',
         email: '',
@@ -202,7 +249,6 @@
         }
     })
 
-
     function datosIngresadosSonValidos() {
         const {nombre, email, telefono, direccion, telefonoFijo} = contactoObj;
 
@@ -223,7 +269,7 @@
         } else {
             contactoObj.id = Date.now()
             //arreglo que contiene todos los contactos
-            contenedorDeContactos.agregarContactos({...contactoObj})
+            contenedorDeContactos.agregarContacto({...contactoObj})
             iu.imprimirAlerta("Agregado correctamente")
         }
         reiniciarObject()
@@ -257,6 +303,36 @@
         document.getElementById("botonGuardarContacto").innerHTML = "Editar Contacto"
 
         editando = true;
+    }
+
+    // .................................................................................BASE DE DATOS CON iNDEXEDDB
+
+
+
+    //muestra todos los registros en el html al recargar la pagina
+    function loadAll() {
+        let DB = crearBD.result;
+        let transaction = DB.transaction(["people"], "readonly");
+        let object = transaction.objectStore("people");
+
+        let contactos = [];
+
+        object.openCursor().onsuccess = function (e) {
+            let result = e.target.result;
+
+            if (result === null) {
+                return;
+            }
+
+            contactos.push(result.value);
+            result.continue();
+        };
+
+        transaction.oncomplete = function () {
+            contenedorDeContactos.contactos = contactos;
+            iu.imprimirContactos(contenedorDeContactos);
+        };
+
     }
 
 
